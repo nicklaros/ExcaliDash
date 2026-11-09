@@ -1,0 +1,34 @@
+# Host-specific overrides for this machine. No secrets here (they live in .env).
+# Usage:
+#   docker compose -f docker-compose.prod.yml -f compose.override.yml up -d
+services:
+  backend:
+    environment:
+      # Public origin served through nginx-proxy-manager.
+      FRONTEND_URL: https://excalidash.ekofahrudi.com
+      # Single trusted proxy hop: nginx-proxy-manager (172.20.0.10).
+      TRUST_PROXY: "1"
+      # Daily SQLite backup at 04:00 UTC into the backup-data volume.
+      BACKUP_SCHEDULE: "0 0 4 * * *"
+      BACKUP_DIR: /app/backups
+      BACKUP_RETENTION_DAYS: "14"
+    volumes:
+      - backend-data:/app/prisma
+      - backup-data:/app/backups
+    networks:
+      docker-bridge:
+        ipv4_address: 172.20.0.26
+
+  frontend:
+    # nginx-proxy-manager is the only entrypoint; publish no host ports.
+    ports: !override []
+    networks:
+      docker-bridge:
+        ipv4_address: 172.20.0.25
+
+networks:
+  docker-bridge:
+    external: true
+
+volumes:
+  backup-data:
